@@ -1,0 +1,1 @@
+SPRITE_PLACEHOLDER_128x64 = bytearray([0xFF] * 1024)
