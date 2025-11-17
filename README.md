@@ -1,3 +1,22 @@
+# CODENAME NOMAD
+
+
+Para monta el proyecto en la simulación de Wokwi, ejecuta el siguiente comando:
+```
+./scripts/update_device.sh
+```
+
+(Esta basado en esto)
+```
+mpremote connect port:rfc2217://localhost:4000 fs ls && mpremote connect port:rfc2217://localhost:4000 fs cp ssd1306.py :/ && mpremote connect port:rfc2217://localhost:4000 fs cp main.py :/ && mpremote connect port:rfc2217://localhost:4000 fs ls && mpremote connect port:rfc2217://localhost:4000 exec "import machine; i2c=machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21)); print('scan:', i2c.scan())" && mpremote connect port:rfc2217://localhost:4000 exec "import ssd1306, machine; i2c=machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21)); d=ssd1306.SSD1306_I2C(128,64,i2c); d.fill(0); d.text('NOMAD',0,0); d.show()" && mpremote connect port:rfc2217://localhost:4000 exec "import main"
+```
+
+IMPORTANTE:
+Si cambias de TAB, el comando va a mostrar error, necesitas volver a ejecutarlo con el TAB de Wokwi Simulador activo
+
+
+
+
 # MicroPython Simulation in Wokwi for VS Code
 
 Example project for running MicroPython on [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=Wokwi.wokwi-vscode).
