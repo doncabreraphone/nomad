@@ -2,9 +2,15 @@
 
 
 Para monta el proyecto en la simulación de Wokwi, ejecuta el siguiente comando:
+
+1) PRIMERO ABRIR WOKWI SIMULADOR
+
+2) EJECUTAR ESTO
 ```
 ./scripts/update_device.sh
 ```
+3) LISTO
+
 
 (Esta basado en esto)
 ```

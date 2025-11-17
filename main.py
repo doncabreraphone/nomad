@@ -1,64 +1,61 @@
-from machine import Pin, I2C, PWM # --- NUEVO: Añadimos PWM ---
+# main.py
+
+from machine import Pin, I2C, PWM
 from ssd1306 import SSD1306_I2C
 import time
+# --- NUEVO: Importamos la librería para manejar los gráficos ---
+import framebuf
 
+# --- ASSETS ---
+# Importamos el módulo que contiene nuestra animación
+import test_animation
+import music_intro
+import _thread
+from sound_manager import load_song, play_music_loop
+
+# --- Configuración Inicial ---
 # Pausa para estabilizar el hardware del simulador
 time.sleep_ms(200)
 
-# --- Configuración Inicial ---
 i2c = I2C(0, scl=Pin(22), sda=Pin(21))
 oled = SSD1306_I2C(128, 64, i2c)
 
-# --- NUEVO: Configuración del Buzzer ---
-# Definimos el pin que usaremos para el buzzer
 buzzer_pin = Pin(25, Pin.OUT)
-# Creamos el objeto PWM que nos permitirá generar tonos
 buzzer = PWM(buzzer_pin)
 
+# --- NUEVO: Preparación de la Animación ---
+# Convertimos cada bytearray de nuestros assets en un objeto de imagen
+anim_fb = []
+for frame_data in test_animation.TEST_ANIMATION:
+    fb = framebuf.FrameBuffer(frame_data, 128, 64, framebuf.MONO_HLSB)
+    anim_fb.append(fb)
 
-# --- Definimos el Layout de la Pantalla ---
-ZONA_JUEGO_ALTO = 48
-TEXTO_Y_1 = ZONA_JUEGO_ALTO
-TEXTO_Y_2 = ZONA_JUEGO_ALTO + 8
+# --- Tareas en Segundo Plano ---
+# Cargamos la canción que queremos reproducir
+load_song(music_intro)
 
-# --- Lógica Principal del Juego ---
+# Iniciamos la música en un hilo separado para que no bloquee la animación
+_thread.start_new_thread(play_music_loop, (buzzer,))
 
-# 1. Borramos toda la pantalla
-oled.fill(0)
+# --- BUCLE PRINCIPAL DE ANIMACIÓN (REEMPLAZA EL CÓDIGO ANTERIOR) ---
+frame_actual = 0
+# Velocidad de 8 FPS (1000ms / 8 = 125ms por fotograma)
+velocidad_anim_ms = 125 
 
-# 2. Dibujamos al personaje usando texto en la "Zona de Juego"
-oled.text("O", 60, 20)
-
-# 3. Escribimos el diálogo en la "Zona de Texto"
-linea1 = "Cambiaso"
-linea2 = "> Cruzar"
-
-oled.text(linea1, 0, TEXTO_Y_1)
-oled.text(linea2, 0, TEXTO_Y_2)
-
-# 4. Mostramos todo en la pantalla
-oled.show()
-
-# --- NUEVO: Hacemos sonar un "beep" de inicio ---
-# Usamos un bloque try/finally para asegurarnos de que el buzzer
-# siempre se apague al final, incluso si hay un error.
-try:
-    # Tono 1: Un beep corto de bienvenida
-    buzzer.freq(800)          # Frecuencia (tono)
-    buzzer.duty_u16(32768)    # Volumen (50%)
-    time.sleep_ms(100)        # Duración
+print("Starting main animation loop...")
+while True:
+    # 1. Obtenemos el FrameBuffer del fotograma actual
+    frame_a_dibujar = anim_fb[frame_actual]
     
-    # Pausa silenciosa
-    buzzer.duty_u16(0)        # Apagamos el volumen
-    time.sleep_ms(50)
+    # 2. Borramos la pantalla y dibujamos el fotograma en la posición (0, 0)
+    oled.fill(0)
+    oled.blit(frame_a_dibujar, 0, 0)
     
-    # Tono 2: Un beep más agudo
-    buzzer.freq(1200)
-    buzzer.duty_u16(32768)
-    time.sleep_ms(150)
-
-finally:
-    # --- NUEVO: Limpieza final ---
-    # Es una buena práctica apagar y liberar el buzzer al final del script.
-    buzzer.duty_u16(0)
-    buzzer.deinit()
+    # 3. Mostramos el resultado
+    oled.show()
+    
+    # 4. Avanzamos al siguiente fotograma
+    frame_actual = (frame_actual + 1) % len(anim_fb)
+    
+    # 5. Esperamos para controlar la velocidad de la animación
+    time.sleep_ms(velocidad_anim_ms)
