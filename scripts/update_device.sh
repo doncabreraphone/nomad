@@ -1,27 +1,45 @@
 #!/bin/zsh
 
-# Script to update the Wokwi MicroPython device
+set -euo pipefail
 
-# 1. Copy all .py files to the device
+DEVICE=${DEVICE:-port:rfc2217://localhost:4000}
+if [ $# -ge 1 ]; then
+  DEVICE="$1"
+fi
+
+echo "Usando dispositivo: $DEVICE"
+
+if [[ "$DEVICE" == port:rfc2217://* ]]; then
+  HOSTPORT=${DEVICE#port:rfc2217://}
+  HOST=${HOSTPORT%:*}
+  PORT=${HOSTPORT##*:}
+  echo "Verificando $HOST:$PORT..."
+  if ! nc -z "$HOST" "$PORT" 2>/dev/null; then
+    echo "Error: No se pudo conectar a $HOST:$PORT. ¿Está corriendo el simulador Wokwi?"
+    exit 1
+  fi
+fi
+
+echo "Realizando reset suave del dispositivo..."
+if ! mpremote connect "$DEVICE" reset; then
+  echo "Advertencia: Falló el reset. Continuando con la copia..."
+fi
+
 for f in *.py; do
-  echo "Copying $f to device..."
-  mpremote connect port:rfc2217://localhost:4000 fs cp "$f" :/
-  if [ $? -ne 0 ]; then
-    echo "Error: Failed to copy $f. Aborting."
+  echo "Copiando $f al dispositivo..."
+  if ! mpremote connect "$DEVICE" fs cp "$f" :/; then
+    echo "Error: Falló la copia de $f. Abortando."
     exit 1
   fi
 done
 
-# 2. List files on the device to confirm copy
-echo "\nFiles on device:"
-mpremote connect port:rfc2217://localhost:4000 fs ls
+echo "\nArchivos en el dispositivo:"
+mpremote connect "$DEVICE" fs ls || echo "Advertencia: No se pudieron listar archivos."
 
-# 3. Wake up the display and show a test message
-echo "\nWaking up display..."
-mpremote connect port:rfc2217://localhost:4000 exec "import ssd1306, machine; i2c=machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21)); d=ssd1306.SSD1306_I2C(128,64,i2c); d.fill(0); d.text('NOMAD',0,0); d.show()"
+echo "\nDespertando pantalla..."
+mpremote connect "$DEVICE" exec "import ssd1306, machine; i2c=machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21)); d=ssd1306.SSD1306_I2C(128,64,i2c); d.fill(0); d.text('NOMAD',0,0); d.show()" || echo "Advertencia: No se pudo ejecutar la prueba de pantalla."
 
-# 4. Execute the main script
-echo "\nExecuting main.py..."
-mpremote connect port:rfc2217://localhost:4000 exec "import main"
+echo "\nEjecutando main.py..."
+mpremote connect "$DEVICE" exec "import main" || echo "Advertencia: No se pudo ejecutar main.py."
 
-echo "\nUpdate complete."
+echo "\nActualización completa."
