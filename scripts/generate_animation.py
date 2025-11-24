@@ -1,6 +1,8 @@
 import sys
 import re
 import glob
+from rich.console import Console
+from rich.panel import Panel
 
 def parse_c_array(path):
     with open(path, "r") as f:
@@ -44,15 +46,17 @@ def write_output(frames, out_path, variable_name):
         f.write("\n".join(lines))
 
 def main():
+    console = Console()
+
     if len(sys.argv) != 2:
-        print("Usage: python scripts/generate_animation.py <output_filename.py>")
-        print("Example: python scripts/generate_animation.py travel_animation.py")
+        console.print("[bold red]Usage:[/bold red] python scripts/generate_animation.py <output_filename.py>")
+        console.print("[bold cyan]Example:[/bold cyan] python scripts/generate_animation.py travel_animation.py")
         sys.exit(1)
 
     output_filename = sys.argv[1]
     
     if not output_filename.endswith('_animation.py'):
-        print("Error: Output filename must end with '_animation.py'")
+        console.print(f"[bold red]Error:[/bold red] Output filename must end with '_animation.py'")
         sys.exit(1)
 
     # Derive names from the output filename
@@ -69,12 +73,11 @@ def main():
     source_files = sorted(glob.glob(source_files_pattern), key=sort_key)
 
     if not source_files:
-        print(f"Error: No source files found matching '{source_files_pattern}'")
+        console.print(f"[bold red]Error:[/bold red] No source files found matching '[yellow]{source_files_pattern}[/yellow]'")
         sys.exit(1)
 
-    print(f"Found {len(source_files)} source files:")
-    for p in source_files:
-        print(f"  - {p}")
+    file_list_str = "\n".join([f"  - {p}" for p in source_files])
+    console.print(Panel(file_list_str, title=f"[bold cyan]Found {len(source_files)} source files[/bold cyan]", border_style="blue", title_align="left"))
 
     frames = []
     for p in source_files:
@@ -84,7 +87,7 @@ def main():
 
     # Write to the project root
     write_output(frames, output_filename, variable_name)
-    print(f"\nSuccessfully generated '{output_filename}' with {len(frames)} frames.")
+    console.print(f"\n[bold green]✓ Successfully generated '{output_filename}' with {len(frames)} frames.[/bold green]")
 
 if __name__ == "__main__":
     main()

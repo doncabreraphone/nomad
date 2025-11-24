@@ -1,76 +1,73 @@
-# CODENAME NOMAD
+# CODENAME NOMAD — Firmware ESP32 (MicroPython)
 
+Firmware del dispositivo NOMAD. Entorno: ESP32 + MicroPython.  
+Objetivo: desarrollo rápido, simulación en Wokwi y carga automática.
 
-Para monta el proyecto en la simulación de Wokwi, ejecuta el siguiente comando:
+---
 
-1) PRIMERO ABRIR WOKWI SIMULADOR
+## Configuración rápida
 
-2) EJECUTAR ESTO
+### 1. Requisitos
+Instala `mpremote`:
+```bash
+pip3 install mpremote
 ```
+
+### 2. Entorno virtual
+```bash
+python3 -m venv .venv
+source .venv/bin/activate    # macOS/Linux
+# .venv\Scripts\activate     # Windows
+pip install -r requirements.txt
+```
+
+### 3. Simulador Wokwi en VS Code
+1. Abrí la paleta de comandos (`Cmd+Shift+P` / `Ctrl+Shift+P`).
+2. Seleccioná: **Wokwi: Start Simulator**.
+3. Dejá la pestaña abierta.
+
+### 4. Cargar firmware (simulador o hardware)
+Con el entorno virtual activo:
+```bash
 ./scripts/update_device.sh
 ```
-3) LISTO
 
-
-(Esta basado en esto)
-```
-mpremote connect port:rfc2217://localhost:4000 fs ls && mpremote connect port:rfc2217://localhost:4000 fs cp ssd1306.py :/ && mpremote connect port:rfc2217://localhost:4000 fs cp main.py :/ && mpremote connect port:rfc2217://localhost:4000 fs ls && mpremote connect port:rfc2217://localhost:4000 exec "import machine; i2c=machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21)); print('scan:', i2c.scan())" && mpremote connect port:rfc2217://localhost:4000 exec "import ssd1306, machine; i2c=machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21)); d=ssd1306.SSD1306_I2C(128,64,i2c); d.fill(0); d.text('NOMAD',0,0); d.show()" && mpremote connect port:rfc2217://localhost:4000 exec "import main"
+En hardware físico:
+```bash
+./scripts/update_device.sh /dev/cu.usbmodemXXXX
 ```
 
-IMPORTANTE:
-Si cambias de TAB, el comando va a mostrar error, necesitas volver a ejecutarlo con el TAB de Wokwi Simulador activo
+---
 
+## Scripts útiles
 
+### Generar animaciones
+Convierte frames `.c` a un archivo de animación para MicroPython.
 
-
-# MicroPython Simulation in Wokwi for VS Code
-
-Example project for running MicroPython on [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=Wokwi.wokwi-vscode).
-
-## Prerequisites
-
-1. Install the [Wokwi for VS Code](https://marketplace.visualstudio.com/items?itemName=Wokwi.wokwi-vscode) extension.
-2. Install the [mpremote](https://docs.micropython.org/en/latest/reference/mpremote.html) tool, e.g. `pip install mpremote`.
-
-## Usage
-
-1. Clone this project and open it in VS Code.
-2. From the command palette, select "Wokwi: Start Simulator". You may need to activate your license first.
-3. Select one of the directories to simulate, e.g. "esp32".
-4. While the simulator is running, open a command prompt, and type:
-
-   ```python
-   python -m mpremote connect port:rfc2217://localhost:4000 run main.py
-   ```
-
-   This will connect to the simulator and run the `main.py` file on the board.
-   Note: keep the simulator tab visible while running the command, otherwise the simulator will pause and the command will timeout.
-
-## Advanced usage
-
-You can also use the `mpremote` tool to upload files to the simulator, install libraries, and open a REPL session. For example, the following command will connect to the simulator, upload the `main.py` file, install the `ssd1306` library, and then open a REPL session:
-
-```python
-python -m mpremote connect port:rfc2217://localhost:4000 fs cp main.py :main.py + mip install ssd1306 + repl
+Uso:
+```bash
+python3 scripts/generate_animation.py <nombre_animacion>_animation.py
 ```
 
-See the [mpremote documentation](https://docs.micropython.org/en/latest/reference/mpremote.html) for more details.
-
-### Shortcut
-
-On Unix based systems (e.g. Mac or Linux), you can create a shortcut for connecting to the simulator by running the following command:
-
-```shell
-mkdir -p ~/.config/mpremote
-echo 'config={"wokwi": "connect port:rfc2217://localhost:4000"}' > ~/.config/mpremote/config.py
+Ejemplo:
+```bash
+python3 scripts/generate_animation.py travel_animation.py
 ```
 
-After running this command, you can connect to the simulator by running `mpremote wokwi`.
+Resultado: `travel_animation.py` con `TRAVEL_ANIMATION`.
 
-## License
 
-Licensed under the MIT license. See [LICENSE](LICENSE) for details.
+
+---
+
+## Estructura mínima del proyecto
 
 ```
-
+/
+ main.py
+ assets/
+ scripts/
+   generate_animation.py
+   update_device.sh
+ requirements.txt
 ```
