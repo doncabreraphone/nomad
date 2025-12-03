@@ -2,6 +2,7 @@
 
 import time
 import framebuf
+from micropython import const
 
 # register definitions
 SET_CONTRAST        = const(0x81)

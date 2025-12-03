@@ -42,19 +42,17 @@ En hardware físico:
 ## Scripts útiles
 
 ### Generar animaciones
-Convierte frames `.c` a un archivo de animación para MicroPython.
+https://javl.github.io/image2cpp/
+Las imagenes hay que ponerlas de a una, ordenadas o sale mal.
+
+Este script ahora es interactivo. Simplemente ejecutalo y seguí las instrucciones:
 
 Uso:
 ```bash
-python3 scripts/generate_animation.py <nombre_animacion>_animation.py
+python3 scripts/generate_animation.py
 ```
 
-Ejemplo:
-```bash
-python3 scripts/generate_animation.py travel_animation.py
-```
-
-Resultado: `travel_animation.py` con `TRAVEL_ANIMATION`.
+El script te mostrará un menú para que elijas la animación a generar y te preguntará si deseas invertir los colores.
 
 
 
@@ -71,3 +69,17 @@ Resultado: `travel_animation.py` con `TRAVEL_ANIMATION`.
    update_device.sh
  requirements.txt
 ```
+
+
+# MUSIC
+https://basicpitch.spotify.com/
+
+https://arduinomidi.netlify.app/
+
+https://aisonggenerator.io/es/midi-editor
+
+https://suno.com/
+
+
+# ART
+https://voidless.dev/image-gen

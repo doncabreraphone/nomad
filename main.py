@@ -8,8 +8,8 @@ import framebuf
 
 # --- ASSETS ---
 # Importamos el módulo que contiene nuestra animación
-import test_animation
-import music_intro
+import walk_animation
+import blues_corto
 import _thread
 from sound_manager import load_song, play_music_loop
 
@@ -26,13 +26,13 @@ buzzer = PWM(buzzer_pin)
 # --- NUEVO: Preparación de la Animación ---
 # Convertimos cada bytearray de nuestros assets en un objeto de imagen
 anim_fb = []
-for frame_data in test_animation.TEST_ANIMATION:
+for frame_data in walk_animation.WALK_ANIMATION:
     fb = framebuf.FrameBuffer(frame_data, 128, 64, framebuf.MONO_HLSB)
     anim_fb.append(fb)
 
 # --- Tareas en Segundo Plano ---
 # Cargamos la canción que queremos reproducir
-load_song(music_intro)
+load_song(blues_corto)
 
 # Iniciamos la música en un hilo separado para que no bloquee la animación
 _thread.start_new_thread(play_music_loop, (buzzer,))
