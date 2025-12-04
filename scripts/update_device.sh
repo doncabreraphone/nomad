@@ -22,6 +22,17 @@ function mp() {
   $PY -m mpremote connect "$DEVICE" "$@"
 }
 
+function check_connection() {
+  rich_printer "[dim]Verificando conexión con $DEVICE...[/dim]"
+  if ! mp ls >/dev/null 2>&1; then
+    rich_printer "[bold red]Error: No se puede conectar con el dispositivo en $DEVICE.[/bold red]"
+    rich_printer "[yellow]Sugerencias:[/yellow]"
+    rich_printer "  - Asegúrate de que el simulador Wokwi esté corriendo (F1 -> Start Simulator)."
+    rich_printer "  - Verifica que el puerto sea correcto (por defecto localhost:4000)."
+    exit 1
+  fi
+}
+
 # --- Barra de Progreso ---
 function progress_bar() {
   local total=$1
@@ -105,13 +116,28 @@ fi
 # 4. Copiar archivos
 echo ""
 rich_printer "[b]Paso 4: Copiando archivos del proyecto...[/b]"
+
+# Copiar archivos python de la raíz
 total=${#local_py_files[@]}
-rich_printer "[dim]Copiando ${total} archivos...[/dim]"
+rich_printer "[dim]Copiando ${total} archivos de raíz...[/dim]"
 for file in "${local_py_files[@]}"; do
   rich_printer "[dim]  - ${file}[/dim]"
   mp fs cp "$file" :/ >/dev/null 2>&1
 done
-rich_printer "[green]✓ ${total} archivos copiados.[/green]"
+
+# Copiar estructura de directorios (menus/)
+rich_printer "[dim]Copiando carpetas...[/dim]"
+# Asegurar que existe el directorio 'menus'
+mp fs mkdir :menus >/dev/null 2>&1 || true
+# Copiar archivos dentro de menus/
+for file in menus/*.py; do
+  if [[ -f "$file" ]]; then
+    rich_printer "[dim]  - ${file}[/dim]"
+    mp fs cp "$file" :menus/ >/dev/null 2>&1
+  fi
+done
+
+rich_printer "[green]✓ Archivos copiados.[/green]"
 
 # 5. Reset final
 echo ""

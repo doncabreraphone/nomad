@@ -1,3 +1,6 @@
+# sound_manager.py
+# Propósito: Ya esta terminado.
+
 from machine import PWM
 import time
 

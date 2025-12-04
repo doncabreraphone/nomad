@@ -17,8 +17,8 @@ NOTES = {
     'G3': 196,
     'G4': 392,
 }
-TEMPO = 500
-SUBDIV = 480
+TEMPO = 420
+SUBDIV = 370
 PIECE = [
     (NOTES['SILENCE'], TEMPO * 480 // SUBDIV),
     (NOTES['G3'], TEMPO * 240 // SUBDIV),

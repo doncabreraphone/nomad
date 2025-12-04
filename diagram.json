@@ -10,13 +10,29 @@
       "left": -100.76,
       "attrs": { "env": "micropython-20231005-v1.21.0" }
     },
-    { "type": "board-ssd1306", "id": "oled1", "top": 99.14, "left": 57.83, "attrs": {} },
+    { "type": "board-ssd1306", "id": "oled1", "top": 89.54, "left": 134.63, "attrs": {} },
     {
       "type": "wokwi-buzzer",
       "id": "bz1",
       "top": -55.2,
       "left": -199.8,
       "attrs": { "volume": "0.1" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 252.6,
+      "left": 25.8,
+      "rotate": 90,
+      "attrs": { "color": "green", "label": "A", "xray": "" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn2",
+      "top": 252.6,
+      "left": 120,
+      "rotate": 90,
+      "attrs": { "color": "blue", "label": "B", "xray": "" }
     }
   ],
   "connections": [
@@ -27,7 +43,11 @@
     [ "oled1:GND", "esp:GND.2", "black", [ "v-67.2", "h-96" ] ],
     [ "oled1:VCC", "esp:3V3", "red", [ "v-28.8", "h0.15", "v-76.8", "h-201.75" ] ],
     [ "bz1:2", "esp:25", "red", [ "v0" ] ],
-    [ "bz1:1", "esp:GND.1", "black", [ "v0" ] ]
+    [ "bz1:1", "esp:GND.1", "black", [ "v0" ] ],
+    [ "btn1:2.l", "esp:4", "green", [] ],
+    [ "btn1:1.r", "esp:GND.1", "black", [] ],
+    [ "btn2:2.l", "esp:5", "blue", [] ],
+    [ "btn2:1.r", "esp:GND.2", "black", [] ]
   ],
   "dependencies": {}
 }

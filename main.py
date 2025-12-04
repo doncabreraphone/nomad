@@ -1,61 +1,102 @@
 # main.py
+# Propósito:  El director de orquesta. Inicializa el hardware, corre el bucle principal (while True), lee los inputs y llama al engine para actualizar el juego y al renderer para dibujar.
 
-from machine import Pin, I2C, PWM
-from ssd1306 import SSD1306_I2C
 import time
-# --- NUEVO: Importamos la librería para manejar los gráficos ---
-import framebuf
-
-# --- ASSETS ---
-# Importamos el módulo que contiene nuestra animación
-import walk_animation
-import blues_corto
 import _thread
-from sound_manager import load_song, play_music_loop
+import hardware
+import renderer
+import sound_manager
+import assets
+import config
 
-# --- Configuración Inicial ---
-# Pausa para estabilizar el hardware del simulador
-time.sleep_ms(200)
+# Scenes
+import intro_scene
+import walk_scene
+import hq_scene
+import wifi_manager
+import menus.main_menu as main_menu
 
-i2c = I2C(0, scl=Pin(22), sda=Pin(21))
-oled = SSD1306_I2C(128, 64, i2c)
+# --- Configuración e Inicialización ---
 
-buzzer_pin = Pin(25, Pin.OUT)
-buzzer = PWM(buzzer_pin)
+# 1. Inicializar Hardware
+# Obtenemos oled, buzzer y los botones A y B
+oled, buzzer, button_a, button_b = hardware.init_hardware()
 
-# --- NUEVO: Preparación de la Animación ---
-# Convertimos cada bytearray de nuestros assets en un objeto de imagen
-anim_fb = []
-for frame_data in walk_animation.WALK_ANIMATION:
-    fb = framebuf.FrameBuffer(frame_data, 128, 64, framebuf.MONO_HLSB)
-    anim_fb.append(fb)
+# 2. Inicializar Sonido
+# Cargamos la canción desde los assets
+# Nota: sound_manager.load_song espera un módulo con PIECE y NOTES
+sound_manager.load_song(assets.SONG_BLUES)
+# Iniciamos la música en un hilo separado para que suene durante la intro
+_thread.start_new_thread(sound_manager.play_music_loop, (buzzer,))
 
-# --- Tareas en Segundo Plano ---
-# Cargamos la canción que queremos reproducir
-load_song(blues_corto)
-
-# Iniciamos la música en un hilo separado para que no bloquee la animación
-_thread.start_new_thread(play_music_loop, (buzzer,))
-
-# --- BUCLE PRINCIPAL DE ANIMACIÓN (REEMPLAZA EL CÓDIGO ANTERIOR) ---
-frame_actual = 0
-# Velocidad de 8 FPS (1000ms / 8 = 125ms por fotograma)
-velocidad_anim_ms = 125 
-
-print("Starting main animation loop...")
-while True:
-    # 1. Obtenemos el FrameBuffer del fotograma actual
-    frame_a_dibujar = anim_fb[frame_actual]
-    
-    # 2. Borramos la pantalla y dibujamos el fotograma en la posición (0, 0)
+def draw_menu(oled, selected_index):
     oled.fill(0)
-    oled.blit(frame_a_dibujar, 0, 0)
+    oled.text("MAIN MENU", 25, 0)
     
-    # 3. Mostramos el resultado
+    options = ["1. Launch Game", "2. Uplink", "3. Manual"]
+    
+    for i, option in enumerate(options):
+        y = 20 + (i * 12)
+        prefix = "> " if i == selected_index else "  "
+        oled.text(prefix + option, 0, y)
+        
     oled.show()
+
+def show_qr_code(oled):
+    oled.fill(0)
+    oled.text("MANUAL QR", 25, 0)
+    # Placeholder box for QR
+    oled.fill_rect(32, 15, 64, 48, 1)
+    oled.fill_rect(34, 17, 60, 44, 0) # Inner empty
+    oled.text("SCAN ME", 35, 35)
+    oled.show()
+    time.sleep(3)
+
+# --- Bucle Principal ---
+
+print("Starting system...")
+
+# 1. Play Intro Scene
+try:
+    # Pasamos el botón para que espere la pulsación
+    # Asegúrate de que 'intro_scene.py' esté actualizado en el dispositivo
+    intro_scene.play_sequence(oled, button_a)
+except Exception as e:
+    print(f"Error playing intro: {e}")
+    # Si falla la intro, esperamos un poco para que se pueda leer el error
+    time.sleep(5)
+
+# 2. Menu Loop
+menu = main_menu.MainMenu(oled)
+
+while True:
+    # Ejecutar menú y esperar selección
+    # El método run() maneja el bucle de dibujo y input internamente
+    # Pasamos button_a para navegación (up/down) y button_b para selección (enter)
+    selected_action = menu.run(button_a, button_b)
     
-    # 4. Avanzamos al siguiente fotograma
-    frame_actual = (frame_actual + 1) % len(anim_fb)
+    print(f"Action selected: {selected_action}")
     
-    # 5. Esperamos para controlar la velocidad de la animación
-    time.sleep_ms(velocidad_anim_ms)
+    if selected_action == "launch":
+        print("Launching Game...")
+        hq_scene.play_scene(oled)
+        walk_scene.play_scene(oled)
+        
+    elif selected_action == "uplink":
+        print("Starting Uplink...")
+        wifi_manager.play_scene(oled)
+        
+    elif selected_action == "manual":
+        print("Showing Manual...")
+        # Definir show_qr_code o moverlo a un módulo
+        # show_qr_code(oled) # Asumiendo que existe localmente o mover a modulo
+        pass # Placeholder
+        
+    elif selected_action == "contact":
+        print("Contact info...")
+        oled.fill(0)
+        oled.text("CONTACT", 20, 20)
+        oled.show()
+        time.sleep(2)
+        
+    # Al volver, el bucle while True reinicia el menú
