@@ -28,30 +28,17 @@ def play_sequence(oled, button=None):
     oled.blit(fb_cypher, 0, 0) 
     oled.show()
     
-    # Subir brillo gradualmente
-    for i in range(0, 256, 8):
+    # Subir brillo gradualmente (optimizado: menos pasos, más rápido)
+    for i in range(0, 256, 16):  # Incrementos más grandes
         oled.contrast(i)
-        time.sleep_ms(20)
+        time.sleep_ms(15)  # Menos tiempo entre pasos
     
     # Pausa dramática de 3 segundos para leer CYPHER
     # (Aquí sonaría el blues de fondo si se inició antes en main.py)
     time.sleep(3) 
 
     # --- FASE 2: ANIMACIÓN DE TEXTO (FLY-IN) ---
-    # Ajuste de coordenadas para que queden centrados y no superpuestos
-    # NOMAD (46px) + espacio (4px) + PROTOCOL (61px) = 111px total
-    # Ancho pantalla = 128px
-    # Margen izquierdo = (128 - 111) / 2 = 8.5 -> 8px
-    # Nomad X final = 8
-    # Protocol X final = 8 + 46 + 4 = 58
-    
-    # Queremos que el texto NOMAD PROTOCOL esté justo al medio vertical del CYPHER LOGO (64px alto)
-    # CYPHER LOGO está en (0,0).
-    # Mitad de 64 es 32.
-    # El texto tiene 13px de alto.
-    # Centrado vertical: 32 - (13/2) = 32 - 6 = 26 aprox.
-    # Entonces target_y debería ser ~26.
-    
+    # Optimizado para mejor rendimiento
     target_y = 26   # Altura centrada verticalmente sobre el logo
     
     # Posiciones finales calculadas
@@ -61,31 +48,40 @@ def play_sequence(oled, button=None):
     left_x = -60    # Nomad entra desde izq (afuera)
     right_x = 128   # Protocol entra desde der (afuera)
     
-    step = 5 # Velocidad de movimiento
+    step = 6 # Velocidad de movimiento (aumentada para menos frames)
+    frame_skip = 0  # Contador para saltar frames de actualización
+    last_nomad_x = -1000  # Para tracking de cambios
+    last_proto_x = 2000
 
     while left_x < stop_nomad_x or right_x > stop_proto_x:
-        # 1. Limpiar solo la franja DONDE se mueven las letras
-        # Esto va a "borrar" temporalmente una franja del logo Cypher mientras pasa el texto
-        # Creando un efecto de "máscara" o sobreescritura interesante.
-        oled.fill_rect(0, target_y, 128, 14, 0)
-        
-        # 2. Dibujar en nuevas posiciones
-        oled.blit(fb_nomad, int(left_x), target_y)
-        oled.blit(fb_proto, int(right_x), target_y)
-        
-        # 3. Update físico
-        oled.show()
-        
-        # 4. Calcular próximo paso
+        # Calcular próximo paso primero
         if left_x < stop_nomad_x: 
             left_x += step
-            if left_x > stop_nomad_x: left_x = stop_nomad_x # Clampear
+            if left_x > stop_nomad_x: left_x = stop_nomad_x
             
         if right_x > stop_proto_x: 
             right_x -= step
-            if right_x < stop_proto_x: right_x = stop_proto_x # Clampear
+            if right_x < stop_proto_x: right_x = stop_proto_x
         
-        time.sleep_ms(10) # Control de FPS
+        # Solo actualizar display cada 2 frames para mejor rendimiento
+        frame_skip = (frame_skip + 1) % 2
+        if frame_skip == 0 or left_x >= stop_nomad_x and right_x <= stop_proto_x:
+            # Calcular área mínima que necesita actualización
+            min_x = min(int(left_x), int(right_x), 0)
+            max_x = max(int(left_x) + 46, int(right_x) + 61, 128)
+            width = max_x - min_x
+            
+            # Limpiar solo el área que necesita actualización (más eficiente)
+            oled.fill_rect(max(0, min_x), target_y, min(128, width), 14, 0)
+            
+            # Dibujar en nuevas posiciones
+            oled.blit(fb_nomad, int(left_x), target_y)
+            oled.blit(fb_proto, int(right_x), target_y)
+            
+            # Update físico (solo cuando hay cambios significativos)
+            oled.show()
+        
+        time.sleep_ms(8) # Control de FPS (reducido ligeramente)
     
     # Asegurar dibujo final en posiciones exactas
     oled.fill_rect(0, target_y, 128, 14, 0)

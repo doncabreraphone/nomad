@@ -6,6 +6,7 @@ import math
 import framebuf
 import assets
 import config
+import fonts
 
 class MainMenu:
     # Constantes de tiempo para botones (ms)
@@ -18,7 +19,7 @@ class MainMenu:
         # Opciones del menú
         # (Label, Callback ID)
         self.options = [
-            ("Launch Game", "launch"),
+            ("Launch", "launch"),
             ("Uplink", "uplink"),
             ("Manual", "manual"),
             ("Contact", "contact")
@@ -82,22 +83,25 @@ class MainMenu:
             # Si es el seleccionado
             if i == self.selected_index:
                 self._fill_round_rect(2, y, 118, self.item_height, 4, 1)
-                self.oled.text(label, 24, y + 5, 0)
-                self.oled.blit(self.icon_fb, 6, y + 1, 1)
+                # Centrar verticalmente: item_height=18, FONT_BOLD_HEIGHT=15
+                # Offset = (18 - 15) / 2 = 1.5 -> 1 o 2
+                text_y = y + 2  # Mejor alineación vertical
+                fonts.draw(self.oled, label, 24, text_y, font_data=fonts.FONT_BOLD, color=0)
+                self.oled.blit(self.icon_fb, 6, y + 2, 1)
                 
             else:
-                # No seleccionado
-                # Texto blanco sobre fondo negro
+                # No seleccionado - usar texto nativo más rápido para items no seleccionados
+                # Solo usar fuente personalizada para el seleccionado para mejor rendimiento
                 self.oled.text(label, 24, y + 5, 1)
-                
-                # Sin icono
         
-        # Scroll Bar (Derecha)
-        for i in range(0, 64, 4):
-            self.oled.pixel(126, i, 1)
-            
+        # Scroll Bar (Derecha) - optimizado: solo dibujar puntos necesarios
         bar_height = max(4, 64 // len(self.options))
-        bar_y = int((self.selected_index / (len(self.options) - 1)) * (64 - bar_height))
+        bar_y = int((self.selected_index / max(1, len(self.options) - 1)) * (64 - bar_height))
+        
+        # Limpiar área de scroll bar
+        self.oled.fill_rect(125, 0, 3, 64, 0)
+        
+        # Dibujar scroll bar
         self.oled.fill_rect(125, bar_y, 3, bar_height, 1)
         
         self.oled.show()
@@ -108,10 +112,15 @@ class MainMenu:
         button_up_down (A): Click = Bajar, Long Press = Subir
         button_select (B): Click = Aceptar
         """
-        last_interaction = time.ticks_ms()
+        last_selected_index = -1
+        needs_redraw = True
         
         while True:
-            self.draw()
+            # Solo redibujar si hay cambios o es la primera vez
+            if needs_redraw or self.selected_index != last_selected_index:
+                self.draw()
+                last_selected_index = self.selected_index
+                needs_redraw = False
             
             # --- Botón A (Navegación) ---
             if button_up_down.value() == 0: # Presionado
@@ -129,6 +138,7 @@ class MainMenu:
                     # Acción: Subir (Anterior)
                     print("Button A Long: UP")
                     self.selected_index = (self.selected_index - 1) % len(self.options)
+                    needs_redraw = True
                     
                     # Esperar a que suelte
                     while button_up_down.value() == 0:
@@ -137,6 +147,7 @@ class MainMenu:
                     # Acción: Bajar (Siguiente)
                     print("Button A Short: DOWN")
                     self.selected_index = (self.selected_index + 1) % len(self.options)
+                    needs_redraw = True
             
             # --- Botón B (Selección) ---
             if button_select.value() == 0: # Presionado
@@ -146,4 +157,5 @@ class MainMenu:
                     time.sleep_ms(50)
                 return self.options[self.selected_index][1]
             
-            time.sleep_ms(20)
+            # Aumentar el sleep para dar más tiempo al hilo de música
+            time.sleep_ms(50)

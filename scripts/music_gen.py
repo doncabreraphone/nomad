@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""
+Music Generator Script
+
+Usage:
+    1. Place your music files in the 'assets/' directory.
+       Supported formats: .mid, .midi (and .abc coming soon)
+    2. Run this script: python3 scripts/music_gen.py
+    3. Select the file you want to convert.
+    4. The script will generate a Python module with the song data.
+
+Dependencies:
+    - rich
+"""
 import sys
 import os
 import glob

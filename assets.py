@@ -1,14 +1,27 @@
 # assets.py
 # Propósito: El almacén de arte. Contiene todos tus bytearray de gráficos (Dogeron, Monstruo, Iconos) y quizás la fuente de texto personalizada.
 
-import walk_animation
-import blues_corto
+# Importar módulos con manejo de errores para evitar problemas con mount
+try:
+    import walk_animation
+    WALK_ANIMATION = walk_animation.WALK_ANIMATION
+except (ImportError, AttributeError) as e:
+    print(f"Warning: Could not import walk_animation: {e}")
+    WALK_ANIMATION = []
 
-# Animation assets
-WALK_ANIMATION = walk_animation.WALK_ANIMATION
+try:
+    import blues_corto
+    SONG_BLUES = blues_corto
+except (ImportError, AttributeError) as e:
+    print(f"Warning: Could not import blues_corto: {e}")
+    SONG_BLUES = None
 
-# Audio assets
-SONG_BLUES = blues_corto
+try:
+    import music_intro
+    SONG_INTRO = music_intro
+except (ImportError, AttributeError) as e:
+    print(f"Warning: Could not import music_intro: {e}")
+    SONG_INTRO = None
 
 # --- INTRO SCENE ASSETS (Auto-generated) ---
 # Source: assets/logo/cypher_logo.png (128x64)
