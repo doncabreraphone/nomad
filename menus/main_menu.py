@@ -30,7 +30,9 @@ class MainMenu:
         
         # Configuración visual
         self.item_height = 18 # Altura de cada item
-        self.visible_items = 3 # Cuántos items caben en pantalla (64px / 18 = 3.5)
+        self.visible_items = 3 # Siempre mostrar 3 items visibles
+        self.menu_x = 2  # Posición X del menú (a la izquierda)
+        self.menu_width = 120  # Ancho del menú (128 - 2 - 6 para scroll bar a la derecha)
         
         # Icono CPU (16x16)
         # Usamos el icono original (Blanco sobre Transparente)
@@ -66,43 +68,68 @@ class MainMenu:
     def draw(self):
         self.oled.fill(0)
         
-        # Calcular ventana de visualización
-        selection_y = 22 # (64 - 18) / 2 = 23 aprox
+        # Calcular posición inicial para mostrar siempre 3 items visibles
+        # Total altura para 3 items: 3 * 18 = 54px
+        # Pantalla tiene 64px, espacio disponible: 64 - 54 = 10px
+        # Padding superior: 10 / 2 = 5px
+        start_y = 5
         
-        for i, (label, _) in enumerate(self.options):
-            # Distancia relativa al seleccionado
-            relative_idx = i - self.selected_index
+        # Calcular qué items mostrar basándose en el índice seleccionado
+        # Siempre mostrar 3 items: intentar centrar el seleccionado si es posible
+        if len(self.options) <= self.visible_items:
+            # Si hay 3 o menos items, mostrar todos desde el inicio
+            display_start = 0
+        else:
+            # Si hay más de 3 items, centrar el seleccionado cuando sea posible
+            # El seleccionado debería estar en la posición media (índice 1 de los 3 visibles)
+            display_start = max(0, self.selected_index - 1)
+            # Asegurar que no se salga del rango
+            display_start = min(display_start, len(self.options) - self.visible_items)
+        
+        # Dibujar los 3 items visibles
+        for display_idx in range(self.visible_items):
+            item_idx = display_start + display_idx
             
-            # Posición Y base
-            y = selection_y + (relative_idx * self.item_height)
+            # Si no hay más items, no dibujar
+            if item_idx >= len(self.options):
+                break
             
-            # Si está muy lejos de la pantalla, no dibujamos
-            if y < -self.item_height or y > 64:
-                continue
-                
+            label, _ = self.options[item_idx]
+            y = start_y + (display_idx * self.item_height)
+            
             # Si es el seleccionado
-            if i == self.selected_index:
-                self._fill_round_rect(2, y, 118, self.item_height, 4, 1)
-                # Centrar verticalmente: item_height=18, FONT_BOLD_HEIGHT=15
-                # Offset = (18 - 15) / 2 = 1.5 -> 1 o 2
-                text_y = y + 2  # Mejor alineación vertical
-                fonts.draw(self.oled, label, 24, text_y, font_data=fonts.FONT_BOLD, color=0)
-                self.oled.blit(self.icon_fb, 6, y + 2, 1)
+            if item_idx == self.selected_index:
+                self._fill_round_rect(self.menu_x, y, self.menu_width, self.item_height, 4, 1)
+                text_y = y + 2  # Alineación vertical
+                text_x = self.menu_x + 20  # Espacio para el icono
+                fonts.draw(self.oled, label, text_x, text_y, font_data=fonts.FONT_BOLD, color=0)
+                self.oled.blit(self.icon_fb, self.menu_x + 4, y + 2, 1)
                 
             else:
-                # No seleccionado - usar texto nativo más rápido para items no seleccionados
-                # Solo usar fuente personalizada para el seleccionado para mejor rendimiento
-                self.oled.text(label, 24, y + 5, 1)
+                # No seleccionado - usar FONT_REGULAR para consistencia visual
+                text_y = y + 2  # Misma alineación vertical que el seleccionado
+                text_x = self.menu_x + 20  # Mismo offset que el seleccionado
+                fonts.draw(self.oled, label, text_x, text_y, font_data=fonts.FONT_REGULAR, color=1)
         
-        # Scroll Bar (Derecha) - optimizado: solo dibujar puntos necesarios
+        # Scroll Bar (Derecha) - patrón de píxeles alternados
         bar_height = max(4, 64 // len(self.options))
         bar_y = int((self.selected_index / max(1, len(self.options) - 1)) * (64 - bar_height))
         
-        # Limpiar área de scroll bar
-        self.oled.fill_rect(125, 0, 3, 64, 0)
+        # Scroll bar a la derecha
+        scroll_bar_x = 126  # Posición X a la derecha (128 - 2)
         
-        # Dibujar scroll bar
-        self.oled.fill_rect(125, bar_y, 3, bar_height, 1)
+        # Dibujar pista con patrón de píxeles alternados (on/off)
+        # Patrón: un píxel on, un píxel off
+        for y_pos in range(0, 64):
+            if y_pos % 2 == 0:  # Píxeles pares: on
+                self.oled.pixel(scroll_bar_x, y_pos, 1)
+            # Píxeles impares: off (ya está en 0 por el fill(0))
+        
+        # Dibujar barra (handle) centrada horizontalmente en la pista
+        # La barra es un rectángulo sólido de 3px de ancho centrado
+        bar_width = 3
+        bar_x = scroll_bar_x - (bar_width // 2)  # Centrar la barra en la pista
+        self.oled.fill_rect(bar_x, bar_y, bar_width, bar_height, 1)
         
         self.oled.show()
 

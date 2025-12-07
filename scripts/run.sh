@@ -145,6 +145,24 @@ function do_run_flash() {
   echo ""
   rich_printer "[b]Opción 6: Run desde flash[/b]"
   check_connection || return 1
+  
+  # Verificar que los archivos necesarios estén en el dispositivo
+  rich_printer "[dim]Verificando archivos en el dispositivo...[/dim]"
+  if ! mp fs ls :hardware.py >/dev/null 2>&1; then
+    rich_printer "[yellow]⚠️  Archivos no encontrados en el dispositivo.[/yellow]"
+    rich_printer "[yellow]Es necesario copiar los archivos primero.[/yellow]"
+    echo ""
+    read "?¿Ejecutar update_device.sh ahora? (s/n): " response
+    if [[ "$response" =~ ^[SsYy]$ ]]; then
+      ./scripts/update_device.sh
+      echo ""
+      rich_printer "[green]Archivos copiados. Continuando con run desde flash...[/green]"
+    else
+      rich_printer "[yellow]Saliendo. Ejecutá la opción 3 primero para copiar los archivos.[/yellow]"
+      return 1
+    fi
+  fi
+  
   rich_printer "[dim]Ejecutando main.py desde flash...[/dim]"
   rich_printer "[yellow]Nota: Los mensajes print() aparecen en la consola del simulador Wokwi.[/yellow]"
   mp run main.py || true
@@ -156,14 +174,30 @@ function do_test_connection() {
   rich_printer "[b]Opción 7: Test de conexión y display[/b]"
   check_connection || return 1
   
-  # Verificar si ssd1306.py está en el dispositivo
-  if ! mp fs ls :ssd1306.py >/dev/null 2>&1; then
-    rich_printer "[yellow]ssd1306.py no encontrado. Copiando archivos necesarios...[/yellow]"
-    mp fs cp ssd1306.py :ssd1306.py 2>/dev/null || {
-      rich_printer "[red]Error: No se pudo copiar ssd1306.py[/red]"
-      rich_printer "[yellow]Ejecutá la opción 3 (Update flash) primero.[/yellow]"
+  # Verificar si los archivos necesarios están en el dispositivo
+  rich_printer "[dim]Verificando archivos necesarios...[/dim]"
+  missing_files=()
+  required_files=("ssd1306.py" "config.py" "hardware.py" "test_display.py")
+  
+  for file in "${required_files[@]}"; do
+    if ! mp fs ls ":${file}" >/dev/null 2>&1; then
+      missing_files+=("$file")
+    fi
+  done
+  
+  if [ ${#missing_files[@]} -gt 0 ]; then
+    rich_printer "[yellow]⚠️  Faltan archivos en el dispositivo: ${missing_files[*]}[/yellow]"
+    rich_printer "[yellow]Es necesario copiar los archivos primero.[/yellow]"
+    echo ""
+    read "?¿Ejecutar update_device.sh ahora? (s/n): " response
+    if [[ "$response" =~ ^[SsYy]$ ]]; then
+      ./scripts/update_device.sh
+      echo ""
+      rich_printer "[green]Archivos copiados. Continuando con test...[/green]"
+    else
+      rich_printer "[yellow]Saliendo. Ejecutá la opción 3 primero para copiar los archivos.[/yellow]"
       return 1
-    }
+    fi
   fi
   
   rich_printer "[dim]Ejecutando test simple del display...[/dim]"
